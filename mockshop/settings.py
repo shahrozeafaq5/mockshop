@@ -78,7 +78,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 DEBUG = False
-ALLOWED_HOSTS = ['your-app-name.onrender.com']  # replace with your Render URL
+ALLOWED_HOSTS = ['https://mockshop.onrender.com']  # replace with your Render URL
 
 # Static & Media files
 STATIC_ROOT = BASE_DIR / 'staticfiles'
