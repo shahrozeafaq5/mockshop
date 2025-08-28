@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import Product, Order, OrderItem
 from decimal import Decimal
 from django.views.decorators.http import require_POST
-from django_ratelimit.decorators import ratelimit
+
 
 def product_list(request):
     products = Product.objects.all()
@@ -53,7 +53,7 @@ def cart_view(request):
         items.append({'product': product, 'quantity': int(quantity), 'subtotal': subtotal})
     return render(request, 'shop/cart.html', {'cart_items': items, 'total': total, 'cart': cart})
 
-@ratelimit(key='ip', rate='5/m', block=True)
+
 def checkout(request):
     cart = request.session.get('cart', {})
     items = []
