@@ -1,0 +1,52 @@
+{% extends "shop/base.html" %}
+{% block title %}Order Successful - Mock Shop{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[70vh] bg-gradient-to-b from-white to-gray-50 px-4">
+  
+  <!-- Animated Success Circle -->
+  <div class="relative flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-6 animate-bounce">
+    <svg xmlns="http://www.w3.org/2000/svg" 
+         class="w-12 h-12 text-green-600 animate-pulse" 
+         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+    </svg>
+  </div>
+
+  <!-- Card -->
+  <div class="bg-white shadow-lg rounded-2xl p-8 max-w-lg w-full text-center transform transition-all duration-500 hover:shadow-2xl">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-4 animate-fade-in">Thank You! 🎉</h1>
+    <p class="text-gray-600 mb-6 text-lg leading-relaxed">
+      Your order <span class="font-semibold text-blue-600">#{{ order.id }}</span> has been placed successfully.  
+      We’ve sent a confirmation email to  
+      <span class="font-semibold">{{ order.customer_email }}</span>.
+    </p>
+
+    <!-- Divider -->
+    <div class="w-full border-t border-gray-200 my-6"></div>
+
+    <!-- Actions -->
+    <div class="flex flex-col md:flex-row justify-center gap-4">
+      <a href="{% url 'product_list' %}" 
+         class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md transition transform hover:-translate-y-1 hover:shadow-lg">
+        🛍 Continue Shopping
+      </a>
+      <a href="{% url 'cart_view' %}" 
+         class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg shadow-md transition transform hover:-translate-y-1 hover:shadow-lg">
+        🛒 View Cart
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Tailwind Animations -->
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 1s ease-out forwards;
+}
+</style>
+{% endblock %}

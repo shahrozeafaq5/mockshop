@@ -1,0 +1,46 @@
+{% extends "shop/base.html" %}
+{% block title %}Mock Shop - Products{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+
+  {% for product in products %}
+  <div class="bg-gradient-to-br from-white to-gray-100 rounded-2xl shadow-lg p-6 flex flex-col transform transition-all hover:scale-105 hover:shadow-2xl duration-300">
+    
+    <!-- Product Image -->
+    {% if product.main_image %}
+      <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="w-full h-56 object-cover rounded-lg mb-4 transition-transform duration-500 hover:scale-110" />
+    {% elif product.image_url %}
+      <img src="{{ product.image_url }}" alt="{{ product.name }}" class="w-full h-56 object-cover rounded-lg mb-4 transition-transform duration-500 hover:scale-110" />
+    {% else %}
+      <img src="https://via.placeholder.com/400x300?text=No+Image" alt="{{ product.name }}" class="w-full h-56 object-cover rounded-lg mb-4 transition-transform duration-500 hover:scale-110" />
+    {% endif %}
+
+    <!-- Product Info -->
+    <h2 class="text-xl font-bold mb-2 text-gray-900">{{ product.name }}</h2>
+    <p class="text-gray-600 mb-4">{{ product.description|truncatechars:60 }}</p>
+    <p class="text-lg font-semibold text-blue-600 mb-4">${{ product.price }}</p>
+
+    <!-- Add to Cart -->
+    <div x-data="{ qty: 1 }" class="mt-auto">
+      <form method="POST" action="{% url 'add_to_cart' product.id %}" class="flex flex-col gap-2">
+        {% csrf_token %}
+        <div class="flex items-center gap-2">
+          <button type="button" @click="qty = Math.max(1, qty - 1)" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition">-</button>
+          <input type="number" name="quantity" x-model.number="qty" min="1" class="w-20 text-center border rounded" />
+          <button type="button" @click="qty = qty + 1" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition">+</button>
+        </div>
+        <button type="submit" class="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white px-4 py-2 rounded mt-2 shadow-lg transition-all duration-300">
+          🛒 Add to Cart
+        </button>
+      </form>
+    </div>
+
+    <a href="{% url 'product_detail' product.id %}" class="mt-2 text-blue-600 hover:text-blue-800 hover:underline text-sm transition">
+      View Details →
+    </a>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

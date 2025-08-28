@@ -1,0 +1,41 @@
+{% extends "shop/base.html" %}
+{% block title %}Checkout - Mock Shop{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-2xl p-6 max-w-3xl mx-auto">
+  <h1 class="text-3xl font-bold mb-6">Checkout</h1>
+
+  {% if items %}
+  <div class="mb-6">
+    <h2 class="text-xl font-semibold mb-2">Order Summary</h2>
+    <div class="space-y-4 border-b pb-4">
+      {% for item in items %}
+      <div class="flex justify-between">
+        <span>{{ item.product.name }} x {{ item.quantity }}</span>
+        <span>${{ item.subtotal }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mt-4 flex justify-between font-bold text-lg">
+      <span>Total:</span>
+      <span>${{ total }}</span>
+    </div>
+  </div>
+
+  <form method="POST" class="space-y-4">
+    {% csrf_token %}
+    <h2 class="text-xl font-semibold mb-2">Your Details</h2>
+    <input type="text" name="name" placeholder="Full Name" required class="w-full border rounded px-4 py-2" />
+    <input type="email" name="email" placeholder="Email" required class="w-full border rounded px-4 py-2" />
+    <textarea name="address" placeholder="Shipping Address" required class="w-full border rounded px-4 py-2"></textarea>
+    
+    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg shadow">
+      Place Order 🛒
+    </button>
+  </form>
+
+  {% else %}
+    <p class="text-gray-600">Your cart is empty. <a href="{% url 'product_list' %}" class="text-blue-600 hover:underline">Continue shopping</a></p>
+  {% endif %}
+</div>
+{% endblock %}
