@@ -1,3 +1,4 @@
+<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,9 +6,9 @@
   <title>{% block title %}Mock Shop{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Tailwind & AlpineJS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <!-- Tailwind & AlpineJS (from allowed CDNs) -->
+  <script {% if request %}nonce="{{ request.csp_nonce }}"{% endif %} src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://unpkg.com/feather-icons"></script>
 
   <!-- Google Fonts -->
@@ -19,7 +20,9 @@
     body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s ease-in; }
     body.loaded { opacity: 1; }
   </style>
-  <script>
+
+  <!-- Inline script needs a nonce -->
+  <script {% if request %}nonce="{{ request.csp_nonce }}"{% endif %}>
     window.addEventListener("load", () => { document.body.classList.add("loaded"); })
   </script>
 </head>
@@ -47,10 +50,10 @@
     </div>
   </nav>
 
-  <!-- Content -->
-  <main class="flex-grow max-w-7xl mx-auto px-4 py-8">{% block content %}{% endblock %}</main>
+  <main class="flex-grow max-w-7xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
 
-  <!-- Footer -->
   <footer class="bg-white border-t mt-8">
     <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center text-gray-600">
       <p>&copy; 2025 MockShop. All rights reserved.</p>
@@ -61,6 +64,9 @@
     </div>
   </footer>
 
-  <script>feather.replace()</script>
+  <!-- External script; no nonce needed when from allowed origin -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  <!-- Inline usage needs nonce -->
+  <script {% if request %}nonce="{{ request.csp_nonce }}"{% endif %}>feather.replace()</script>
 </body>
 </html>
