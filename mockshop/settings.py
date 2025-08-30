@@ -36,9 +36,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # third-party
-    'csp',              # <- add this (pip install django-csp)
-    # local
+
+    'csp',             
     'shop',
 ]
 
