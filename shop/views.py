@@ -1,99 +1,131 @@
-# views.py
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Product, Order, OrderItem
-from decimal import Decimal, InvalidOperation
+from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.utils.html import escape
+from .models import Product, Order, OrderItem
+
 
 def product_list(request):
     products = Product.objects.all()
-    cart = request.session.get('cart', {})
-    return render(request, 'shop/product_list.html', {'products': products, 'cart': cart})
+    return render(request, "shop/product_list.html", {"products": products})
+
 
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    cart = request.session.get('cart', {})
-    return render(request, 'shop/product_detail.html', {'product': product, 'cart': cart})
+    return render(request, "shop/product_detail.html", {"product": product})
 
-def _clean_qty(raw, default=1, min_v=1, max_v=100):
-    try:
-        q = int(raw)
-        if q < min_v: return default
-        if q > max_v: return max_v
-        return q
-    except (TypeError, ValueError):
-        return default
+
+def cart_view(request):
+    order = None
+    order_id = request.session.get("cart_order_id")
+    if order_id:
+        order = Order.objects.filter(id=order_id).first()
+    return render(request, "shop/cart.html", {"order": order})
+
 
 @require_POST
 def add_to_cart(request, product_id):
-    qty = _clean_qty(request.POST.get('quantity', 1))
-    cart = request.session.get('cart', {})
-    key = str(int(product_id))  # normalize
-    cart[key] = cart.get(key, 0) + qty
-    request.session['cart'] = cart
-    return redirect('product_detail', product_id=product_id)
+    product = get_object_or_404(Product, id=product_id)
+
+    # 🔒 Validate quantity strictly
+    quantity_raw = request.POST.get("quantity", "1")
+    if not quantity_raw.isdigit():
+        messages.error(request, "Invalid quantity format.")
+        return redirect("product_detail", product_id=product.id)
+
+    quantity = int(quantity_raw)
+    if quantity < 1 or quantity > 10:
+        messages.error(request, "Quantity must be between 1 and 10.")
+        return redirect("product_detail", product_id=product.id)
+
+    # Get/create order
+    order_id = request.session.get("cart_order_id")
+    if order_id:
+        order = Order.objects.filter(id=order_id).first()
+    else:
+        order = Order.objects.create(
+            customer_name="Guest",
+            customer_email="guest@example.com",
+            customer_address="N/A",
+        )
+        request.session["cart_order_id"] = order.id
+
+    # Safe ORM (no raw SQL)
+    order_item, created = OrderItem.objects.get_or_create(
+        order=order,
+        product=product,
+        defaults={"quantity": quantity, "price": product.price},
+    )
+    if not created:
+        new_qty = min(order_item.quantity + quantity, 10)
+        order_item.quantity = new_qty
+        order_item.save()
+
+    messages.success(request, f"{escape(product.name)} added to cart.")
+    return redirect("cart_view")
+
 
 @require_POST
 def update_cart(request, product_id):
-    qty = _clean_qty(request.POST.get('quantity', 1), default=1)
-    cart = request.session.get('cart', {})
-    key = str(int(product_id))
-    if qty > 0:
-        cart[key] = qty
-    else:
-        cart.pop(key, None)
-    request.session['cart'] = cart
-    return redirect('cart_view')
+    product = get_object_or_404(Product, id=product_id)
+    order_id = request.session.get("cart_order_id")
+    if not order_id:
+        messages.error(request, "No active cart.")
+        return redirect("cart_view")
+
+    order = Order.objects.filter(id=order_id).first()
+    if not order:
+        messages.error(request, "Cart not found.")
+        return redirect("cart_view")
+
+    # 🔒 Validate quantity strictly
+    quantity_raw = request.POST.get("quantity", "1")
+    if not quantity_raw.isdigit():
+        messages.error(request, "Invalid quantity format.")
+        return redirect("cart_view")
+
+    quantity = int(quantity_raw)
+    if quantity < 1 or quantity > 10:
+        messages.error(request, "Quantity must be between 1 and 10.")
+        return redirect("cart_view")
+
+    try:
+        order_item = OrderItem.objects.get(order=order, product=product)
+        order_item.quantity = quantity
+        order_item.save()
+        messages.success(request, f"Updated {escape(product.name)} quantity.")
+    except OrderItem.DoesNotExist:
+        messages.error(request, "Item not found in cart.")
+
+    return redirect("cart_view")
+
 
 @require_POST
 def remove_from_cart(request, product_id):
-    cart = request.session.get('cart', {})
-    cart.pop(str(int(product_id)), None)
-    request.session['cart'] = cart
-    return redirect('cart_view')
+    product = get_object_or_404(Product, id=product_id)
+    order_id = request.session.get("cart_order_id")
+    if not order_id:
+        messages.error(request, "No active cart.")
+        return redirect("cart_view")
 
-def cart_view(request):
-    cart = request.session.get('cart', {})
-    items = []
-    total = Decimal('0.00')
-    for pid, quantity in cart.items():
-        product = get_object_or_404(Product, id=int(pid))
-        q = _clean_qty(quantity)
-        subtotal = product.price * q
-        total += subtotal
-        items.append({'product': product, 'quantity': q, 'subtotal': subtotal})
-    return render(request, 'shop/cart.html', {'cart_items': items, 'total': total, 'cart': cart})
+    order = Order.objects.filter(id=order_id).first()
+    if not order:
+        messages.error(request, "Cart not found.")
+        return redirect("cart_view")
+
+    try:
+        order_item = OrderItem.objects.get(order=order, product=product)
+        order_item.delete()
+        messages.success(request, f"{escape(product.name)} removed from cart.")
+    except OrderItem.DoesNotExist:
+        messages.error(request, "Item not found in cart.")
+
+    return redirect("cart_view")
+
 
 def checkout(request):
-    cart = request.session.get('cart', {})
-    items = []
-    total = Decimal('0.00')
-    for pid, quantity in cart.items():
-        product = get_object_or_404(Product, id=int(pid))
-        q = _clean_qty(quantity)
-        subtotal = product.price * q
-        total += subtotal
-        items.append({'product': product, 'quantity': q, 'subtotal': subtotal})
-
-    if request.method == 'POST':
-        name = (request.POST.get('name') or '').strip()
-        email = (request.POST.get('email') or '').strip()
-        address = (request.POST.get('address') or '').strip()
-
-        if name and email and address and items:
-            order = Order.objects.create(
-                customer_name=name[:200],
-                customer_email=email[:254],
-                customer_address=address[:500],
-            )
-            for item in items:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item['product'],
-                    quantity=item['quantity'],
-                    price=item['product'].price,
-                )
-            request.session['cart'] = {}
-            return render(request, 'shop/checkout_success.html', {'order': order})
-
-    return render(request, 'shop/checkout.html', {'items': items, 'total': total, 'cart': cart})
+    order_id = request.session.get("cart_order_id")
+    order = None
+    if order_id:
+        order = Order.objects.filter(id=order_id).first()
+    return render(request, "shop/checkout.html", {"order": order})
